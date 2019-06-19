@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 module Multibases
+  # rubocop:disable Style/MutableConstant
   IMPLEMENTATIONS = {}
+  # rubocop:enable Style/MutableConstant
 
   Registration = Struct.new(:code, :encoding, :engine) do
     def hash

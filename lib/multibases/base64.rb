@@ -1,11 +1,7 @@
 # frozen_string_literal: true
 
-require_relative './tr_escape'
-
 module Multibases
   class Base64
-    using TrEscape
-
     def inspect
       '[Multibases::Base64 ' \
         "alphabet=\"#{@table.alphabet}\"" \
@@ -63,16 +59,30 @@ module Multibases
       encoded.chomp!(Default.table_padder) unless @table.padder
       return encoded if default?
 
-      encoded.transcode(Default.table_ords(force_strict: @table.strict?), table_ords)
+      encoded.transcode(
+        Default.table_ords(force_strict: @table.strict?),
+        table_ords
+      )
     end
 
     def decode(encoded)
       return DecodedByteArray::EMPTY if encoded.empty?
 
-      encoded = encoded.force_encoding(Encoding::ASCII_8BIT).bytes unless encoded.is_a?(Array)
-      raise ArgumentError, "'#{encoded}' contains unknown characters'" unless decodable?(encoded)
+      unless encoded.is_a?(Array)
+        encoded = encoded.force_encoding(Encoding::ASCII_8BIT).bytes
+      end
 
-      encoded = ByteArray.new(encoded).transcode(table_ords, Default.table_ords(force_strict: @table.strict?)) unless default?
+      unless decodable?(encoded)
+        raise ArgumentError, "'#{encoded}' contains unknown characters'"
+      end
+
+      unless default?
+        encoded = ByteArray.new(encoded).transcode(
+          table_ords,
+          Default.table_ords(force_strict: @table.strict?)
+        )
+      end
+
       Multibases::Base64.decode(encoded)
     end
 
@@ -98,7 +108,9 @@ module Multibases
       @table.padder
     end
 
+    # rubocop:disable Metrics/LineLength
     Default = Base64.new('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=')
     UrlSafe = Base64.new('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_=')
+    # rubocop:enable Metrics/LineLength
   end
 end

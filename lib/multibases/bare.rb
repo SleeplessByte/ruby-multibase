@@ -17,7 +17,6 @@ module Multibases
   end
 
   Encoded = Struct.new(:code, :encoding, :length, :data) do
-
     ##
     # Packs the data and the code into an encoded string
     #
@@ -99,18 +98,20 @@ module Multibases
       code,
       Multibases.encoding(code),
       encoded_data.length,
-      encoded_data
+      EncodedByteArray.new(encoded_data.bytes)
     )
   end
 
   def decorate(encoding, encoded = nil)
     return encoding.pack if encoding.is_a?(Encoded)
 
+    encoded = encoded.bytes unless encoded.is_a?(Array)
+
     Encoded.new(
       Multibases.code(encoding),
       encoding,
       encoded.length,
-      encoded
+      EncodedByteArray.new(encoded)
     ).pack
   end
 

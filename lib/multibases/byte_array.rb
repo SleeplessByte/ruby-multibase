@@ -61,6 +61,10 @@ module Multibases
       map(&:chr).join.force_encoding(encoding)
     end
 
+    def force_encoding(*args)
+      to_str(*args)
+    end
+
     alias to_s to_str
   end
 

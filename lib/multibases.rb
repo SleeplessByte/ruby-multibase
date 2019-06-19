@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'multibases/bare'
 
 require 'multibases/registry'
@@ -14,6 +16,7 @@ module Multibases
   # https://github.com/multiformats/multibase#multibase-table-v100-rc-semver
   multibase_version '1.0.0'
 
+  # rubocop:disable Metrics/LineLength
   implement 'base1', '1', nil, '1'
   implement 'base2', '0', Base2, '01'
   implement 'base8', '7', BaseX, '01234567'
@@ -35,6 +38,5 @@ module Multibases
   implement 'base64pad', 'M', Base64, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
   implement 'base64url', 'u', Base64, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
   implement 'base64urlpad', 'U', Base64, 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_='
-
+  # rubocop:enable Metrics/LineLength
 end
-

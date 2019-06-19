@@ -5,7 +5,6 @@ require_relative './ord_table'
 
 module Multibases
   class Base2
-
     def inspect
       "[Multibases::Base2 alphabet=\"#{@table.alphabet}\"]"
     end
@@ -49,16 +48,30 @@ module Multibases
       encoded = Multibases::Base2.encode(plain)
       return encoded if default?
 
-      encoded.transcode(Default.table_ords(force_strict: @table.strict?), table_ords)
+      encoded.transcode(
+        Default.table_ords(force_strict: @table.strict?),
+        table_ords
+      )
     end
 
     def decode(encoded)
       return DecodedByteArray::EMPTY if encoded.empty?
 
-      encoded = encoded.force_encoding(Encoding::ASCII_8BIT).bytes unless encoded.is_a?(Array)
-      raise ArgumentError, "'#{encoded}' contains unknown characters'" unless decodable?(encoded)
+      unless encoded.is_a?(Array)
+        encoded = encoded.force_encoding(Encoding::ASCII_8BIT).bytes
+      end
 
-      encoded = ByteArray.new(encoded).transcode(table_ords, Default.table_ords(force_strict: @table.strict?)) unless default?
+      unless decodable?(encoded)
+        raise ArgumentError, "'#{encoded}' contains unknown characters'"
+      end
+
+      unless default?
+        encoded = ByteArray.new(encoded).transcode(
+          table_ords,
+          Default.table_ords(force_strict: @table.strict?)
+        )
+      end
+
       Multibases::Base2.decode(encoded)
     end
 

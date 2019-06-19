@@ -1,6 +1,7 @@
+# frozen_string_literal: true
+
 module Multibases
   class OrdTable
-
     def initialize(ords, strict:, padder: nil)
       ords = ords.uniq
 
@@ -17,12 +18,17 @@ module Multibases
       # input the same as correctly cased input. In other words, the table is
       # strict if a character exists that is both upcased and downcased and
       # therefore has a canonical casing.
-      @strict = strict || chars_cased.empty? || chars.length != chars_downcased.length
+      @strict = strict ||
+                chars_cased.empty? ||
+                chars.length != chars_downcased.length
+
       @loose_ords = (chars + chars_downcased + chars_upcased).uniq.map(&:ord)
     end
 
     def eql?(other)
-      other.is_a?(OrdTable) && other.alphabet == alphabet && other.strict? == strict?
+      other.is_a?(OrdTable) &&
+        other.alphabet == alphabet &&
+        other.strict? == strict?
     end
 
     alias == eql?
@@ -62,7 +68,10 @@ module Multibases
     end
 
     def index(byte)
-      @forward[byte] || !strict? && (@forward[byte.chr.upcase.ord] || @forward[byte.chr.downcase.ord])
+      @forward[byte] || !strict? && (
+        @forward[byte.chr.upcase.ord] ||
+        @forward[byte.chr.downcase.ord]
+      )
     end
 
     def ord_at(index)

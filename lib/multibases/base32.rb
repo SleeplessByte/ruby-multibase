@@ -4,12 +4,14 @@ require_relative './byte_array'
 require_relative './ord_table'
 
 module Multibases
-  def inspect
-    "[Multibases::Base32 alphabet=\"#{@table.chars.join}\"#{@table.strict? ? ' strict' : ''}]"
-  end
-
   # RFC 3548
   class Base32
+    def inspect
+      '[Multibases::Base32 ' \
+        "alphabet=\"#{@table.chars.join}\"" \
+        "#{@table.strict? ? ' strict' : ''}" \
+      ']'
+    end
 
     def self.encode(plain)
       Default.encode(plain)
@@ -70,7 +72,9 @@ module Multibases
         p = n < 8 ? 5 - (@bytes.length * 8) % 5 : 0
         c = @bytes.inject(0) { |m, o| (m << 8) + o } << p
 
-        output = (0..(n - 1)).to_a.reverse.collect { |i| @table.ord_at((c >> i * 5) & 0x1f) }
+        output = (0..(n - 1)).to_a.reverse.collect do |i|
+          @table.ord_at((c >> i * 5) & 0x1f)
+        end
         @table.padder ? output + Array.new((8 - n), @table.padder) : output
       end
     end

@@ -49,20 +49,25 @@ You can also bring your own encoder/decoder. The most important methods are:
   `Encoded` PORO that has `decode`.
 - `Multibases::Encoded.pack`: packs the multihash into a single string
 - `Multibases::Encoded.decode(engine?)`: decodes the PORO's data using a
-  built-in engine, or engine if it's given. Returns a decoded `String`.
+  built-in engine, or engine if it's given. Returns a decoded `ByteArray`.
 
 ```ruby
 encoded = Multibases.encode('base2', 'mb')
-# => #<struct Multibases::Encoded code="0", encoding="base2", length=16, data="0110110101100010">
+# => #<struct Multibases::Encoded
+#             code="0", encoding="base2", length=16,
+#             data=[Multibases::EncodedByteArray "0110110101100010"]>
 
 encoded.pack
-# => "00110110101100010"
+# => [Multibases::EncodedByteArray "00110110101100010"]
+
 
 encoded = Multibases.unpack('766542')
-# => #<struct Multibases::Encoded code="7", encoding="base8", length=5, data="66542">
+# => #<struct Multibases::Encoded
+#             code="7", encoding="base8", length=5,
+#             data=[Multibases::EncodedByteArray "66542"]>
 
 encoded.decode
-# => "mb"
+# => [Multibases::DecodedByteArray "mb"]
 ```
 
 This means that the flow of calls is as follows:
@@ -82,7 +87,46 @@ Convenience methods are provided:
 
 ```ruby
 Multibases.pack('base2', 'mb')
-# => "00110110101100010"
+# => [Multibases::EncodedByteArray "00110110101100010"]
+```
+
+### ByteArrays and encoding
+
+As you can see, the "final" methods output a `ByteArray`. These are simple
+`DelegateClass` wrappers around the array with bytes, which means that the `hex`
+encoding of `hello` is not actually stored as `"f68656c6c6f"`:
+
+```ruby
+packed = Multibases.pack('base16', 'hello')
+# => [Multibases::EncodedByteArray "f68656c6c6f"]
+
+packed.to_a # .__getobj__.dup
+# => [102, 54, 56, 54, 53, 54, 99, 54, 99, 54, 102]
+```
+
+They override `inspect` and _force_ the encoding to `UTF-8` (in inspect), but
+you can use the convenience methods to use the correct encoding:
+
+> **Note**: If you're using `pry` and have not changed the printer, you
+> naturally won't see the output as described above, but instead see the inner
+> Array of bytes, always.
+
+```ruby
+data = 'hello'.encode('UTF-16LE')
+data.encoding
+# => #<Encoding:UTF-16LE>
+
+data.bytes
+# => [104, 0, 101, 0, 108, 0, 108, 0, 111, 0]
+
+packed = Multibases.pack('base16', data)
+# => [Multibases::EncodedByteArray "f680065006c006c006f00"]
+
+decoded = Multibases.decode(packed)
+# => [Multibases::DecodedByteArray "h e l l o "]
+
+decoded.to_s('UTF-16LE')
+# => "hello"
 ```
 
 ### Implementations
@@ -142,12 +186,14 @@ class EngineKlazz
   def initialize(*_)
   end
 
-  def encode(plain_text)
-    plain_text.reverse
+  def encode(plain)
+    plain = plain.bytes unless plain.is_a?(Array)
+    Multibases::EncodedByteArray.new(plain.reverse)
   end
 
-  def decode(encoded_text)
-    encoded_text.reverse
+  def decode(encoded)
+    encoded = encoded.bytes unless encoded.is_a?(Array)
+    Multibases::DecodedByteArray.new(encoded.reverse)
   end
 end
 
@@ -155,10 +201,10 @@ Multibases.implement 'reverse', 'r', EngineKlazz, 'alphabet'
 # => Initializes EngineKlazz with 'alphabet'
 
 Multibases.pack('reverse', 'md')
-# => "rdm"
+# => [Multibases::EncodedByteArray "rdm"]
 
 Multibases.decode('dm')
-# => "md"
+# => [Multibases::DecodedByteArray "md"]
 
 # Alternatively, you can pass the instantiated engine to the appropriate
 # function.
@@ -169,10 +215,10 @@ Multibases.implement 'reverse', 'r'
 
 # Pack, using a custom engine
 Multibases.pack('reverse', 'md', engine)
-# => "rdm"
+# => [Multibases::EncodedByteArray "rdm"]
 
 Multibases.decode('rdm', engine)
-# => "md"
+# => [Multibases::DecodedByteArray "md"]
 ```
 
 ### Using the built-in encoders/decoders
@@ -183,10 +229,10 @@ You can use the built-in encoders and decoders.
 require 'multibases/base16'
 
 Multibases::Base16.encode('foobar')
-# => "666f6f626172"
+# => [Multibases::EncodedByteArray "666f6f626172"]
 
 Multibases::Base16.decode('666f6f626172')
-# => "foobar"
+# => [Multibases::DecodedByteArray "foobar"]
 ```
 
 These don't add the `multibase` prefix to the output and they use the canonical
@@ -201,10 +247,10 @@ might be in a future update using a second argument or key.
 require 'multibases/base_x'
 
 Base3 = Multibases::BaseX.new('012')
-# => [Multibases::Base3 alphabet="012"]
+# => [Multibases::Base3 alphabet="012" strict]
 
 Base3.encode('foobar')
-# => "112202210012121110020020001100"
+# => [Multibases::EncodedByteArray "112202210012121110020020001100"]
 ```
 
 You can use the same technique to inject a custom alphabet. This can be used on
@@ -215,10 +261,23 @@ base = Multibases::Base2.new('.!')
 # => [Multibases::Base2 alphabet=".!"]
 
 base.encode('foo')
-# => ".!!..!!..!!.!!!!.!!.!!!!"
+# [Multibases::EncodedByteArray ".!!..!!..!!.!!!!.!!.!!!!"]
 
 base.decode('.!!...!..!!....!.!!!..!.')
-# => 'bar'
+# => [Multibases::DecodedByteArray "bar"]
+```
+
+All the built-in encoder/decoders take strings, arrays or byte-arrays as input.
+
+```ruby
+expected = Multibases::Base16.encode("abc")
+# => [Multibases::EncodedByteArray "616263"]
+
+expected == Multibases::Base16.encode([97, 98, 99])
+# => true
+
+expected == Multibases::Base16.encode(Multibases::ByteArray.new("abc".bytes))
+# => true
 ```
 
 ## Related

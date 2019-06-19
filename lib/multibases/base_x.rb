@@ -5,14 +5,16 @@ require_relative './ord_table'
 
 module Multibases
   class BaseX
-
     def inspect
-      "[Multibases::Base#{@table.base} alphabet=\"#{@table.alphabet}\"#{@table.strict? ? ' strict' : ''}]"
+      "[Multibases::Base#{@table.base} " \
+        "alphabet=\"#{@table.alphabet}\"" \
+        "#{@table.strict? ? ' strict' : ''}" \
+      ']'
     end
 
     class Table < IndexedOrdTable
       def self.from(alphabet, **opts)
-        raise ArgumentError, 'Alphabet too long' if alphabet.length >= 255 # 256 - zero char
+        raise ArgumentError, 'Alphabet too long' if alphabet.length >= 255
 
         alphabet = alphabet.bytes if alphabet.respond_to?(:bytes)
         alphabet.map!(&:ord)
@@ -38,7 +40,10 @@ module Multibases
       expected_length = @table.encoded_length(plain)
 
       # Find leading zeroes
-      zeroes_count = [0, plain.find_index { |b| b.ord != 0 } || plain.length].max
+      zeroes_count = [
+        0,
+        plain.find_index { |b| b.ord != 0 } || plain.length
+      ].max
       plain = plain.drop(zeroes_count)
       expected_length = @table.encoded_length(plain) unless @table.pad_to_power?
 
@@ -72,17 +77,25 @@ module Multibases
     ##
     # Decode +encoded+ to a byte array
     #
-    # @param encoded [String, Array, EncodedByteArray] encoded string or byte array
+    # @param encoded [String, Array, ByteArray] encoded string or byte array
     # @return [DecodedByteArray] decoded byte array
     #
     def decode(encoded)
       return DecodedByteArray::EMPTY if encoded.empty?
 
-      encoded = encoded.force_encoding(Encoding::ASCII_8BIT).bytes unless encoded.is_a?(Array)
-      raise ArgumentError, "'#{encoded}' contains unknown characters'" unless decodable?(encoded)
+      unless encoded.is_a?(Array)
+        encoded = encoded.force_encoding(Encoding::ASCII_8BIT).bytes
+      end
+
+      unless decodable?(encoded)
+        raise ArgumentError, "'#{encoded}' contains unknown characters'"
+      end
 
       # Find leading zeroes
-      zeroes_count = [0, encoded.find_index { |b| b.ord != @table.zero } || encoded.length].max
+      zeroes_count = [
+        0,
+        encoded.find_index { |b| b.ord != @table.zero } || encoded.length
+      ].max
       encoded = encoded.drop(zeroes_count)
 
       # Decode number from encoding base to base 10

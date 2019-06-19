@@ -1,8 +1,11 @@
 # frozen_string_literal: true
 
 require 'test_helper'
-
 require 'csv'
+
+# rubocop:disable Metrics/LineLength, Style/WordArray
+
+# TODO: submodule the specs and read them in from disk
 
 # https://github.com/multiformats/multibase/blob/2d108367e5e3d30c9e3f23475420c242ff8411c8/tests/test1.csv
 TEST_1 = CSV.parse(%(
@@ -150,7 +153,7 @@ TEST_7 = [
   ['base64url', '÷ïÿ', 'uw7fDr8O_'],
   ['base64url', '÷ïÿ🥰÷ïÿ😎🥶🤯', 'uw7fDr8O_8J-lsMO3w6_Dv_CfmI7wn6W28J-krw'],
   ['base64urlpad', '÷ïÿ🥰÷ïÿ😎🥶🤯', 'Uw7fDr8O_8J-lsMO3w6_Dv_CfmI7wn6W28J-krw==']
-]
+].freeze
 
 TEST_8 = [
   ['base16', 'f', 'f66'],
@@ -208,7 +211,9 @@ TEST_8 = [
   ['base64urlpad', 'foob', 'UZm9vYg=='],
   ['base64urlpad', 'fooba', 'UZm9vYmE='],
   ['base64urlpad', 'foobar', 'UZm9vYmFy']
-]
+].freeze
+
+# rubocop:enable Metrics/LineLength, Style/WordArray
 
 class MultibasesFixturesTest < Minitest::Test
   [
@@ -238,16 +243,19 @@ class MultibasesFixturesTest < Minitest::Test
     packed_text = row[1][1..-1]
     encoding = row['encoding']
 
-    expected_packed_text = encoding.include?('upper') ?
-      packed_text.upcase :
-      packed_text.downcase
+    expected_packed_text = if encoding.include?('upper')
+                           then packed_text.upcase
+                           else packed_text.downcase
+                           end
 
     define_method("test_#{encoding}_encode_hello_world_canonically") do
-      assert_equal expected_packed_text, Multibases.pack(encoding, plain_text).to_s
+      assert_equal expected_packed_text,
+                   Multibases.pack(encoding, plain_text).to_s
     end
 
     define_method("test_#{encoding}_decode_non_canonical_hello_world") do
-      assert_equal plain_text, Multibases.decode(packed_text).to_s
+      assert_equal plain_text,
+                   Multibases.decode(packed_text).to_s
     end
   end
 
@@ -257,11 +265,13 @@ class MultibasesFixturesTest < Minitest::Test
     packed_text = row[2]
 
     define_method("test_#{encoding}_encode_on_emojies_#{i}") do
-      assert_equal packed_text, Multibases.pack(encoding, plain_text).to_s
+      assert_equal packed_text,
+                   Multibases.pack(encoding, plain_text).to_s
     end
 
     define_method("test_#{encoding}_decode_on_emojies_#{i}") do
-      assert_equal plain_text, Multibases.decode(packed_text).to_s.force_encoding(Encoding::UTF_8)
+      assert_equal plain_text,
+                   Multibases.decode(packed_text).to_s(Encoding::UTF_8)
     end
   end
 
@@ -278,5 +288,4 @@ class MultibasesFixturesTest < Minitest::Test
       assert_equal plain_text, Multibases.decode(packed_text).to_s
     end
   end
-
 end

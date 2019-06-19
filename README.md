@@ -1,7 +1,7 @@
 # Multibases
 
-[![Build Status: master](https://travis-ci.com/SleeplessByte/ruby-multibase.svg?branch=master)](https://travis-ci.com/SleeplessByte/ruby-multibase)
-[![Gem Version](https://badge.fury.io/rb/ruby-multibase.svg)](https://badge.fury.io/rb/ruby-multibase)
+[![Build Status](https://travis-ci.com/SleeplessByte/ruby-multibase.svg?token=FpDLv4Yva15pzqYpq9Hk&branch=master)](https://travis-ci.com/SleeplessByte/ruby-multibase)(https://travis-ci.com/SleeplessByte/ruby-multibase)
+[![Gem Version](https://badge.fury.io/rb/multibases.svg)](https://badge.fury.io/rb/multibases)
 [![MIT license](https://img.shields.io/badge/license-MIT-brightgreen.svg)](http://opensource.org/licenses/MIT)
 [![Maintainability](https://api.codeclimate.com/v1/badges/1e5600a4be90eec063e0/maintainability)](https://codeclimate.com/repos/5d094b036bd112014f005f98/maintainability)
 

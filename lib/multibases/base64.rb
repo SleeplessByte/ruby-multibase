@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative './tr_escape'
 
 module Multibases
@@ -7,13 +9,14 @@ module Multibases
     # RFC 4648 implementation
     def self.encode(plain)
       # Base64.strict_encode(plain)
-      Array(plain).pack('m0')
+      Array(plain).pack('m0').encode('ASCII-8BIT')
     end
 
     def self.decode(packed)
       packed = packed.map(&:chr) if packed.is_a?(Array)
-      # Base64.strict_decode64("m0").first
-      packed.unpack("m0").first
+      # Base64.strict_decode64("m").first
+      # Don't use m0, as that requires padding _always_
+      packed.unpack1('m')
     end
 
     class Table
@@ -25,15 +28,16 @@ module Multibases
 
       def initialize(chars)
         if chars.length < 64 || chars.length > 65
-          raise ArgumentError, "Expected chars to contain 64 characters or 64" +
-          " + 1 padding character. Actual: #{chars.length} characters"
+          raise ArgumentError,
+                'Expected chars to contain 64 characters or 64 + 1 padding ' +
+                "character. Actual: #{chars.length} characters"
         end
 
         @chars = chars
       end
 
       def eql?(other)
-        other.is_a?(Table) && other.chars === chars
+        other.is_a?(Table) && other.chars == chars
       end
 
       def hash
@@ -51,12 +55,15 @@ module Multibases
 
     def encode(plain)
       encoded = Multibases::Base64.encode(plain)
+      encoded = encoded.sub(/=+\Z/, '') unless @table.pad
       return encoded if default?
+
       encoded.tr(Default.table_str.tr_escape, table_str.tr_escape)
     end
 
     def decode(encoded)
       raise ArgumentError, "'#{encoded}' contains unknown characters'" unless decodable?(encoded)
+
       encoded = encoded.tr(table_str.tr_escape, Default.table_str.tr_escape) unless default?
       Multibases::Base64.decode(encoded)
     end

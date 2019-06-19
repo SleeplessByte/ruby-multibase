@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative './tr_escape'
 
 module Multibases
@@ -6,7 +8,7 @@ module Multibases
 
     def self.encode(plain)
       plain = plain.map(&:chr) if plain.is_a?(Array)
-      plain.unpack('B*').first
+      plain.unpack1('B*').encode('ASCII-8BIT')
     end
 
     def self.decode(packed)
@@ -22,15 +24,16 @@ module Multibases
       def initialize(chars)
         if chars.length < 2 || chars.length > 2
           # Allow 17 for stale padding that does nothing
-          raise ArgumentError, "Expected chars to contain 2 exactly. " +
-            "Actual: #{chars.length} characters"
+          raise ArgumentError,
+                'Expected chars to contain 2 exactly. Actual: ' +
+                "#{chars.length} characters."
         end
 
         @chars = chars
       end
 
       def eql?(other)
-        other.is_a?(Table) && other.chars === chars
+        other.is_a?(Table) && other.chars == chars
       end
 
       def hash
@@ -47,11 +50,13 @@ module Multibases
     def encode(plain)
       encoded = Multibases::Base2.encode(plain)
       return encoded if default?
+
       encoded.tr(Default.table_str.tr_escape, table_str.tr_escape)
     end
 
     def decode(encoded)
       raise ArgumentError, "'#{encoded}' contains unknown characters'" unless decodable?(encoded)
+
       encoded = encoded.tr(table_str.tr_escape, Default.table_str.tr_escape) unless default?
       Multibases::Base2.decode(encoded)
     end

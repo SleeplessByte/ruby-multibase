@@ -1,7 +1,9 @@
+# frozen_string_literal: true
+
 module TrEscape
   refine String do
     def tr_escape
-      self.gsub(/(?<escapee>[\^\-])/,'\\\\\\k<escapee>')
+      gsub(/(?<escapee>[\^\-])/,'\\\\\\k<escapee>')
     end
   end
 end

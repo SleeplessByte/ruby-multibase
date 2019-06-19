@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Chunkify
   refine String do
     def chunks(size, table)
@@ -29,19 +31,21 @@ module Multibases
 
       attr_reader :chars
 
-      def initialize(chars)
+      def initialize(chars, strict: false)
         if chars.length < 32 || chars.length > 33
-          raise ArgumentError, "Expected chars to contain 32 characters or 32" +
-            " + 1 padding character. Actual: #{chars.length} characters"
+          raise ArgumentError,
+                'Expected chars to contain 32 characters or 32 + 1 padding ' +
+                "character. Actual: #{chars.length} characters"
         end
 
+        @strict = strict || chars.uniq.length != chars.map(&:downcase).uniq.length
         @chars = chars
         @forward = chars.each_with_index.to_h
         @backward = Hash[@forward.to_a.collect(&:reverse)]
       end
 
       def index(byte)
-        @forward[byte.chr]
+        @forward[byte.chr] || !strict? && (@forward[byte.chr.upcase] || @forward[byte.chr.downcase])
       end
 
       def chr(index)
@@ -53,11 +57,15 @@ module Multibases
       end
 
       def eql?(other)
-        other.is_a?(Table) && other.chars === chars
+        other.is_a?(Table) && other.chars == chars
       end
 
       def hash
         chars.hash
+      end
+
+      def strict?
+        @strict
       end
     end
 
@@ -73,22 +81,23 @@ module Multibases
         n = (bytes.length * 5.0 / 8.0).floor
         p = bytes.length < 8 ? 5 - (n * 8) % 5 : 0
 
-        c = bytes.inject(0) do |m,o|
+        c = bytes.inject(0) do |m, o|
           i = @table.index(o)
           raise ArgumentError, "Invalid character '#{o.chr}'" if i.nil?
+
           (m << 5) + i
         end >> p
 
-        (0..n-1).to_a.reverse.collect { |i| ((c >> i * 8) & 0xff).chr }.join
+        (0..(n - 1)).to_a.reverse.collect { |i| ((c >> i * 8) & 0xff).chr }.join
       end
 
       def encode
         n = (@bytes.length * 8.0 / 5.0).ceil
         p = n < 8 ? 5 - (@bytes.length * 8) % 5 : 0
-        c = @bytes.inject(0) { |m,o| (m << 8) + o } << p
+        c = @bytes.inject(0) { |m, o| (m << 8) + o } << p
 
-        output = (0..n-1).to_a.reverse.collect { |i| @table.chr(c >> i * 5) }.join
-        @table.pad ? output + @table.pad * (8-n) : output
+        output = (0..(n - 1)).to_a.reverse.collect { |i| @table.chr(c >> i * 5) }.join
+        @table.pad ? output + @table.pad * (8 - n) : output
       end
     end
 
@@ -98,7 +107,7 @@ module Multibases
 
     def encode(plain)
       plain = plain.map(&:chr) if plain.is_a?(Array)
-      plain.chunks(5, @table).collect(&:encode).join
+      plain.chunks(5, @table).collect(&:encode).join.encode('ASCII-8BIT')
     end
 
     def decode(encoded)

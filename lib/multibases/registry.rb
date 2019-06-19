@@ -1,30 +1,51 @@
+# frozen_string_literal: true
+
 module Multibases
   IMPLEMENTATIONS = {}
 
-  module_function
+  Registration = Struct.new(:code, :encoding, :engine) do
+    def hash
+      encoding.hash
+    end
 
-  def implement(encoding, code, implementation, alphabet)
-    Multibases::IMPLEMENTATIONS[code] = {
-      encoding: encoding,
-      engine: implementation && implementation.new(alphabet)
-    }
-  end
+    def ==(other)
+      return [encoding, code].include?(other) if other.is_a?(String)
 
-  def fetch(code, &block)
-    Multibases::IMPLEMENTATIONS.fetch(code, &block)
-  end
+      eql?(other)
+    end
 
-  def find(encoding)
-    Multibases::IMPLEMENTATIONS.find do |_, v|
-      v[:encoding] == encoding
+    def eql?(other)
+      other.is_a?(Registration) && other.encoding == encoding
     end
   end
 
-  def version(multibase_semver)
-    @spec_version = multibase_semver
+  module_function
+
+  def implement(encoding, code, implementation = nil, alphabet = nil)
+    Multibases::IMPLEMENTATIONS[encoding] = Registration.new(
+      code,
+      encoding,
+      implementation&.new(alphabet)
+    )
   end
 
-  def spec_version
-    @spec_version
+  def fetch_by!(code: nil, encoding: nil)
+    return Multibases::IMPLEMENTATIONS.fetch(encoding) if encoding
+
+    Multibases.find_by(code: code).tap do |found|
+      raise KeyError, "No implementation has code #{code}" unless found
+    end
+  end
+
+  def find_by(code: nil, encoding: nil)
+    Multibases::IMPLEMENTATIONS.values.find do |v|
+      v == code || v == encoding
+    end
+  end
+
+  def multibase_version(multibase_semver = nil)
+    return @multibase_version if multibase_semver.nil?
+
+    @multibase_version = multibase_semver
   end
 end

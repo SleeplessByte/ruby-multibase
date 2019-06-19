@@ -97,23 +97,23 @@ moment, built-in engines are provided as follows:
 | base2             | 0    | binary (0101)                     | `base2` 💨      |
 | base8             | 7    | octal                             | `base_x`       |
 | base10            | 9    | decimal                           | `base_x`       |
-| base16            | f    | hexadecimal                       | `base_16` 💨    |
-| base16upper       | F    | hexadecimal                       | `base_16` 💨    |
-| base32hex         | v    | rfc4648 no padding - highest char | `base_32` ✨    |
-| base32hexupper    | V    | rfc4648 no padding - highest char | `base_32` ✨    |
-| base32hexpad      | t    | rfc4648 with padding              | `base_32` ✨    |
-| base32hexpadupper | T    | rfc4648 with padding              | `base_32` ✨    |
-| base32            | b    | rfc4648 no padding                | `base_32` ✨    |
-| base32upper       | B    | rfc4648 no padding                | `base_32` ✨    |
-| base32pad         | c    | rfc4648 with padding              | `base_32` ✨    |
-| base32padupper    | C    | rfc4648 with padding              | `base_32` ✨    |
-| base32z           | h    | z-base-32 (used by Tahoe-LAFS)    | `base_32` ✨    |
+| base16            | f    | hexadecimal                       | `base16` 💨     |
+| base16upper       | F    | hexadecimal                       | `base16` 💨     |
+| base32hex         | v    | rfc4648 no padding - highest char | `base32` ✨     |
+| base32hexupper    | V    | rfc4648 no padding - highest char | `base32` ✨     |
+| base32hexpad      | t    | rfc4648 with padding              | `base32` ✨     |
+| base32hexpadupper | T    | rfc4648 with padding              | `base32` ✨     |
+| base32            | b    | rfc4648 no padding                | `base32` ✨     |
+| base32upper       | B    | rfc4648 no padding                | `base32` ✨     |
+| base32pad         | c    | rfc4648 with padding              | `base32` ✨     |
+| base32padupper    | C    | rfc4648 with padding              | `base32` ✨     |
+| base32z           | h    | z-base-32 (used by Tahoe-LAFS)    | `base32` ✨     |
 | base58flickr      | Z    | base58 flicker                    | `base_x`       |
 | base58btc         | z    | base58 bitcoin                    | `base_x`       |
-| base64            | m    | rfc4648 no padding                | `base_64` 💨    |
-| base64pad         | M    | rfc4648 with padding - MIME enc   | `base_64` 💨    |
-| base64url         | u    | rfc4648 no padding                | `base_64` 💨    |
-| base64urlpad      | U    | rfc4648 with padding              | `base_64` 💨    |
+| base64            | m    | rfc4648 no padding                | `base64` 💨     |
+| base64pad         | M    | rfc4648 with padding - MIME enc   | `base64` 💨     |
+| base64url         | u    | rfc4648 no padding                | `base64` 💨     |
+| base64urlpad      | U    | rfc4648 with padding              | `base64` 💨     |
 
 Those with a 💨 are marked because they are backed by a C implementation (using
 `pack` and `unpack`) and are therefore suposed to be blazingly fast. Those with

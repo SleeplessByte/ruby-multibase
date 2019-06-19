@@ -7,81 +7,95 @@ module Multibases
     using TrEscape
 
     def inspect
-      "[Multibases::Base64 alphabet=\"#{@table.chars.join}\"]"
+      '[Multibases::Base64 ' \
+        "alphabet=\"#{@table.alphabet}\"" \
+        "#{@table.padder.nil? ? '' : ' pad="' + @table.padder.chr + '"'}" \
+      ']'
     end
 
     # RFC 4648 implementation
     def self.encode(plain)
+      plain = plain.map(&:chr).join if plain.is_a?(Array)
+
       # Base64.strict_encode(plain)
-      Array(plain).pack('m0').encode('ASCII-8BIT')
+      EncodedByteArray.new(Array(String(plain)).pack('m0').bytes)
     end
 
     def self.decode(packed)
-      packed = packed.map(&:chr) if packed.is_a?(Array)
+      packed = packed.map(&:chr).join if packed.is_a?(Array)
       # Base64.strict_decode64("m").first
-      # Don't use m0, as that requires padding _always_
-      packed.unpack1('m')
+      # Don't use m0, as that requires padderding _always_
+      DecodedByteArray.new(packed.unpack1('m').bytes)
     end
 
-    class Table
-      def self.from(string)
-        new(string.chars)
+    class Table < OrdTable
+      def self.from(alphabet, **opts)
+        alphabet = alphabet.bytes if alphabet.respond_to?(:bytes)
+        alphabet.map!(&:ord)
+
+        new(alphabet, **opts)
       end
 
-      attr_reader :chars
+      def initialize(ords, **opts)
+        ords = ords.uniq
 
-      def initialize(chars)
-        if chars.length < 64 || chars.length > 65
+        if ords.length < 64 || ords.length > 65
           raise ArgumentError,
-                'Expected chars to contain 64 characters or 64 + 1 padding ' +
-                "character. Actual: #{chars.length} characters"
+                'Expected alphabet to contain 64 characters or 65 + 1 ' \
+                "padding character. Actual: #{ords.length} characters"
         end
 
-        @chars = chars
-      end
+        padder = nil
+        *ords, padder = ords if ords.length == 65
 
-      def eql?(other)
-        other.is_a?(Table) && other.chars == chars
-      end
-
-      def hash
-        chars.hash
-      end
-
-      def pad
-        @chars[64]
+        super(ords, padder: padder, **opts)
       end
     end
 
-    def initialize(table)
-      @table = table.is_a?(String) ? Table.from(table) : Table.new(table)
+    def initialize(alphabet, strict: false)
+      @table = Table.from(alphabet, strict: strict)
     end
 
     def encode(plain)
+      return EncodedByteArray::EMPTY if plain.empty?
+
       encoded = Multibases::Base64.encode(plain)
-      encoded = encoded.sub(/=+\Z/, '') unless @table.pad
+      encoded.chomp!(Default.table_padder) unless @table.padder
       return encoded if default?
 
-      encoded.tr(Default.table_str.tr_escape, table_str.tr_escape)
+      encoded.transcode(Default.table_ords(force_strict: @table.strict?), table_ords)
     end
 
     def decode(encoded)
+      return DecodedByteArray::EMPTY if encoded.empty?
+
+      encoded = encoded.force_encoding(Encoding::ASCII_8BIT).bytes unless encoded.is_a?(Array)
       raise ArgumentError, "'#{encoded}' contains unknown characters'" unless decodable?(encoded)
 
-      encoded = encoded.tr(table_str.tr_escape, Default.table_str.tr_escape) unless default?
+      encoded = ByteArray.new(encoded).transcode(table_ords, Default.table_ords(force_strict: @table.strict?)) unless default?
       Multibases::Base64.decode(encoded)
     end
 
     def default?
-      @table == Default
+      eql?(Default)
     end
+
+    def eql?(other)
+      other.is_a?(Base64) && other.instance_variable_get(:@table) == @table
+    end
+
+    alias == eql?
 
     def decodable?(encoded)
-      encoded.tr(table_str.tr_escape, '*') =~ /\A\**\z/
+      (encoded.uniq - table_ords).length.zero?
     end
 
-    def table_str
-      @table.chars.join
+    def table_ords(force_strict: nil)
+      @table.tr_ords(force_strict: force_strict)
+    end
+
+    def table_padder
+      @table.padder
     end
 
     Default = Base64.new('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=')

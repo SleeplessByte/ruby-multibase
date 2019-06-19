@@ -224,11 +224,11 @@ class MultibasesFixturesTest < Minitest::Test
       encoding = row['encoding']
 
       define_method("test_#{encoding}_encode_on_#{name}") do
-        assert_equal packed_text, Multibases.pack(encoding, plain_text)
+        assert_equal packed_text, Multibases.pack(encoding, plain_text).to_s
       end
 
       define_method("test_#{encoding}_decode_on_#{name}") do
-        assert_equal plain_text, Multibases.decode(packed_text)
+        assert_equal plain_text, Multibases.decode(packed_text).to_s
       end
     end
   end
@@ -243,11 +243,11 @@ class MultibasesFixturesTest < Minitest::Test
       packed_text.downcase
 
     define_method("test_#{encoding}_encode_hello_world_canonically") do
-      assert_equal expected_packed_text, Multibases.pack(encoding, plain_text)
+      assert_equal expected_packed_text, Multibases.pack(encoding, plain_text).to_s
     end
 
     define_method("test_#{encoding}_decode_non_canonical_hello_world") do
-      assert_equal plain_text, Multibases.decode(packed_text)
+      assert_equal plain_text, Multibases.decode(packed_text).to_s
     end
   end
 
@@ -257,11 +257,11 @@ class MultibasesFixturesTest < Minitest::Test
     packed_text = row[2]
 
     define_method("test_#{encoding}_encode_on_emojies_#{i}") do
-      assert_equal packed_text, Multibases.pack(encoding, plain_text)
+      assert_equal packed_text, Multibases.pack(encoding, plain_text).to_s
     end
 
     define_method("test_#{encoding}_decode_on_emojies_#{i}") do
-      assert_equal plain_text, Multibases.decode(packed_text).force_encoding(Encoding::UTF_8)
+      assert_equal plain_text, Multibases.decode(packed_text).to_s.force_encoding(Encoding::UTF_8)
     end
   end
 
@@ -271,11 +271,12 @@ class MultibasesFixturesTest < Minitest::Test
     packed_text = row[2]
 
     define_method("test_#{encoding}_encode_on_#{plain_text}") do
-      assert_equal packed_text, Multibases.pack(encoding, plain_text)
+      assert_equal packed_text, Multibases.pack(encoding, plain_text).to_s
     end
 
     define_method("test_#{encoding}_decode_on_#{plain_text}") do
-      assert_equal plain_text, Multibases.decode(packed_text)
+      assert_equal plain_text, Multibases.decode(packed_text).to_s
     end
   end
+
 end

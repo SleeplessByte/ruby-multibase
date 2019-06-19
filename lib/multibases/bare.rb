@@ -17,10 +17,22 @@ module Multibases
   end
 
   Encoded = Struct.new(:code, :encoding, :length, :data) do
+
+    ##
+    # Packs the data and the code into an encoded string
+    #
+    # @return [EncodedByteArray]
+    #
     def pack
-      code.encode(data.encoding) + data
+      data.unshift(code.ord)
+      data
     end
 
+    ##
+    # Decodes the data and returns a DecodedByteArray
+    #
+    # @return [DecodedByteArray]
+    #
     def decode(engine = Multibases.engine(encoding))
       raise NoEngine, encoding unless engine
 
@@ -30,12 +42,14 @@ module Multibases
 
   class Identity
     def initialize(*_); end
-    def noop(data)
-      data
+
+    def encode(data)
+      EncodedByteArray.new(data.is_a?(Array) ? data : data.bytes)
     end
 
-    alias encode noop
-    alias decode noop
+    def decode(data)
+      DecodedByteArray.new(data.is_a?(Array) ? data : data.bytes)
+    end
   end
 
   implement 'identity', "\x00", Identity

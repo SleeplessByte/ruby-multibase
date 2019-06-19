@@ -1,82 +1,83 @@
 # frozen_string_literal: true
 
-require_relative './tr_escape'
+require_relative './byte_array'
+require_relative './ord_table'
 
 module Multibases
   class Base2
-    using TrEscape
 
     def inspect
-      "[Multibases::Base2 alphabet=\"#{@table.chars.join}\"]"
+      "[Multibases::Base2 alphabet=\"#{@table.alphabet}\"]"
     end
 
     def self.encode(plain)
-      plain = plain.map(&:chr) if plain.is_a?(Array)
-      plain.unpack1('B*').encode('ASCII-8BIT')
+      plain = plain.map(&:chr).join if plain.is_a?(Array)
+      EncodedByteArray.new(plain.unpack1('B*').bytes)
     end
 
     def self.decode(packed)
-      Array(packed).pack('B*')
+      packed = packed.map(&:chr).join if packed.is_a?(Array)
+      # Pack only works on an array with a single bit string
+      DecodedByteArray.new(Array(String(packed)).pack('B*').bytes)
     end
 
-    class Table
-      def self.from(alphabet)
-        alphabet = alphabet.chars if alphabet.respond_to?(:chars)
-        new(alphabet)
+    class Table < OrdTable
+      def self.from(alphabet, **opts)
+        alphabet = alphabet.bytes if alphabet.respond_to?(:bytes)
+        alphabet.map!(&:ord)
+
+        new(alphabet, **opts)
       end
 
-      def initialize(chars)
-        chars = chars.uniq
-
-        if chars.length < 2 || chars.length > 2
-          # Allow 17 for stale padding that does nothing
+      def initialize(ords, **opts)
+        ords = ords.uniq
+        if ords.length != 2
           raise ArgumentError,
-                'Expected chars to contain 2 exactly. Actual: ' +
-                "#{chars.length} characters."
+                'Expected chars to contain 2 exactly. Actual: ' \
+                "#{ords.length} characters."
         end
 
-        @chars = chars
+        super ords, **opts
       end
-
-      def eql?(other)
-        other.is_a?(Table) && other.chars == chars
-      end
-
-      def hash
-        chars.hash
-      end
-
-      attr_reader :chars
     end
 
-    def initialize(alphabet)
-      @table = Table.from(alphabet)
+    def initialize(alphabet, strict: false)
+      @table = Table.from(alphabet, strict: strict)
     end
 
     def encode(plain)
       encoded = Multibases::Base2.encode(plain)
       return encoded if default?
 
-      encoded.tr(Default.table_str.tr_escape, table_str.tr_escape)
+      encoded.transcode(Default.table_ords(force_strict: @table.strict?), table_ords)
     end
 
     def decode(encoded)
+      return DecodedByteArray::EMPTY if encoded.empty?
+
+      encoded = encoded.force_encoding(Encoding::ASCII_8BIT).bytes unless encoded.is_a?(Array)
       raise ArgumentError, "'#{encoded}' contains unknown characters'" unless decodable?(encoded)
 
-      encoded = encoded.tr(table_str.tr_escape, Default.table_str.tr_escape) unless default?
+      encoded = ByteArray.new(encoded).transcode(table_ords, Default.table_ords(force_strict: @table.strict?)) unless default?
       Multibases::Base2.decode(encoded)
     end
 
     def default?
-      @table == Default
+      eql?(Default)
     end
+
+    def eql?(other)
+      other.is_a?(Base2) && other.instance_variable_get(:@table) == @table
+    end
+
+    alias == eql?
 
     def decodable?(encoded)
-      encoded.tr(table_str.tr_escape, '*') =~ /\A\**\z/
+      (encoded.uniq - @table.tr_ords).length.zero?
     end
 
-    def table_str
-      @table.chars.join
+    def table_ords(force_strict: false)
+      @table.tr_ords(force_strict: force_strict)
     end
 
     Default = Base2.new('01')

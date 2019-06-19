@@ -1,14 +1,7 @@
 # frozen_string_literal: true
 
-module Chunkify
-  refine String do
-    def chunks(size, table)
-      bytes.each_slice(size).map do |slice|
-        ::Multibases::Base32::Chunk.new(slice, table)
-      end
-    end
-  end
-end
+require_relative './byte_array'
+require_relative './ord_table'
 
 module Multibases
   def inspect
@@ -17,7 +10,6 @@ module Multibases
 
   # RFC 3548
   class Base32
-    using Chunkify
 
     def self.encode(plain)
       Default.encode(plain)
@@ -27,59 +19,27 @@ module Multibases
       Default.decode(plain)
     end
 
-    class Table
-      def self.from(alphabet)
-        alphabet = alphabet.chars if alphabet.respond_to?(:chars)
-        new(alphabet)
+    class Table < IndexedOrdTable
+      def self.from(alphabet, **opts)
+        alphabet = alphabet.bytes if alphabet.respond_to?(:bytes)
+        alphabet.map!(&:ord)
+
+        new(alphabet, **opts)
       end
 
-      attr_reader :chars
+      def initialize(ords, **opts)
+        ords = ords.uniq
 
-      def initialize(chars, strict: false)
-        chars = chars.uniq
-
-        if chars.length < 32 || chars.length > 33
+        if ords.length < 32 || ords.length > 33
           raise ArgumentError,
-                'Expected chars to contain 32 characters or 32 + 1 padding ' +
-                "character. Actual: #{chars.length} characters"
+                'Expected alphabet to contain 32 characters or 32 + 1 ' \
+                "padding character. Actual: #{ords.length} characters"
         end
 
-        @chars = chars
-        @forward = chars.each_with_index.to_h
-        @backward = Hash[@forward.to_a.collect(&:reverse)]
+        padder = nil
+        *ords, padder = ords if ords.length == 33
 
-        input_downcased = chars.map(&:downcase).uniq
-        downcased = chars.map(&:upcase).uniq - input_downcased
-
-        # Strict means that the algorithm may _not_ treat incorrectly cased
-        # input the same as correctly cased input. In other words, the table is
-        # strict if a character exists that is both upcased and downcased and
-        # therefore has a canonical casing.
-        @strict = strict || downcased.empty? || chars.length != input_downcased.length
-      end
-
-      def index(byte)
-        @forward[byte.chr] || !strict? && (@forward[byte.chr.upcase] || @forward[byte.chr.downcase])
-      end
-
-      def chr(index)
-        @backward[index & 0x1f]
-      end
-
-      def pad
-        @backward[32]
-      end
-
-      def eql?(other)
-        other.is_a?(Table) && other.chars == chars
-      end
-
-      def hash
-        chars.hash
-      end
-
-      def strict?
-        @strict
+        super(ords, padder: padder, **opts)
       end
     end
 
@@ -90,7 +50,7 @@ module Multibases
       end
 
       def decode
-        bytes = @bytes.take_while { |c| c.chr != @table.pad }
+        bytes = @bytes.take_while { |c| c != @table.padder }
 
         n = (bytes.length * 5.0 / 8.0).floor
         p = bytes.length < 8 ? 5 - (n * 8) % 5 : 0
@@ -102,7 +62,7 @@ module Multibases
           (m << 5) + i
         end >> p
 
-        (0..(n - 1)).to_a.reverse.collect { |i| ((c >> i * 8) & 0xff).chr }.join
+        (0..(n - 1)).to_a.reverse.collect { |i| ((c >> i * 8) & 0xff) }
       end
 
       def encode
@@ -110,23 +70,35 @@ module Multibases
         p = n < 8 ? 5 - (@bytes.length * 8) % 5 : 0
         c = @bytes.inject(0) { |m, o| (m << 8) + o } << p
 
-        output = (0..(n - 1)).to_a.reverse.collect { |i| @table.chr(c >> i * 5) }.join
-        @table.pad ? output + @table.pad * (8 - n) : output
+        output = (0..(n - 1)).to_a.reverse.collect { |i| @table.ord_at((c >> i * 5) & 0x1f) }
+        @table.padder ? output + Array.new((8 - n), @table.padder) : output
       end
     end
 
-    def initialize(alphabet)
-      @table = Table.from(alphabet)
+    def initialize(alphabet, strict: false)
+      @table = Table.from(alphabet, strict: strict)
     end
 
     def encode(plain)
-      plain = plain.map(&:chr) if plain.is_a?(Array)
-      plain.chunks(5, @table).collect(&:encode).join.encode('ASCII-8BIT')
+      return EncodedByteArray::EMPTY if plain.empty?
+
+      EncodedByteArray.new(chunks(plain, 5).collect(&:encode).flatten)
     end
 
     def decode(encoded)
-      encoded = encoded.map(&:chr) if encoded.is_a?(Array)
-      encoded.chunks(8, @table).collect(&:decode).join
+      return DecodedByteArray::EMPTY if encoded.empty?
+
+      DecodedByteArray.new(chunks(encoded, 8).collect(&:decode).flatten)
+    end
+
+    private
+
+    def chunks(whole, size)
+      whole = whole.bytes unless whole.is_a?(Array)
+
+      whole.each_slice(size).map do |slice|
+        ::Multibases::Base32::Chunk.new(slice, @table)
+      end
     end
 
     Default = Base32.new('abcdefghijklmnopqrstuvwxyz234567=')

@@ -8,8 +8,11 @@
 > Multibase is a protocol for disambiguating the encoding of base-encoded
 > (e.g., base32, base64, base58, etc.) binary appearing in text.
 
-`Multibases` is the ruby implementation of [multiformats/multibase][spec]
+`Multibases` is the ruby implementation of [multiformats/multibase][spec].
 
+This gem can be used _both_ for encoding into or decoding from multibase packed
+strings, as well as serve as a _general purpose_ library to do `BaseX` encoding
+and decoding _without_ adding the prefix.
 
 ## Installation
 
@@ -37,7 +40,7 @@ Or install it yourself as:
 ## Usage
 
 This is a low-level library, but high level implementations are provided.
-You can also bring your own encoder/decoded. The most important methods are:
+You can also bring your own encoder/decoder. The most important methods are:
 
 - `Multibases.encode(encoding, data, engine?)`: encodes the given data with a
   built-in engine for encoding, or engine if it's given. Returns an `Encoded`
@@ -170,6 +173,52 @@ Multibases.pack('reverse', 'md', engine)
 
 Multibases.decode('rdm', engine)
 # => "md"
+```
+
+### Using the built-in encoders/decoders
+
+You can use the built-in encoders and decoders.
+
+```ruby
+require 'multibases/base16'
+
+Multibases::Base16.encode('foobar')
+# => "666f6f626172"
+
+Multibases::Base16.decode('666f6f626172')
+# => "foobar"
+```
+
+These don't add the `multibase` prefix to the output and they use the canonical
+`encode` and `decode` nomenclature.
+
+The `base_x` / `BaseX` encoder does not have a module function. You _must_
+instantiate it first. The result is an encoder that uses the base alphabet to
+determine its base. Currently padding is ❌ not supported for `BaseX`, but
+might be in a future update using a second argument or key.
+
+```ruby
+require 'multibases/base_x'
+
+Base3 = Multibases::BaseX.new('012')
+# => [Multibases::Base3 alphabet="012"]
+
+Base3.encode('foobar')
+# => "112202210012121110020020001100"
+```
+
+You can use the same technique to inject a custom alphabet. This can be used on
+the built-in encoders, even the ones that are not `BaseX`:
+
+```ruby
+base = Multibases::Base2.new('.!')
+# => [Multibases::Base2 alphabet=".!"]
+
+base.encode('foo')
+# => ".!!..!!..!!.!!!!.!!.!!!!"
+
+base.decode('.!!...!..!!....!.!!!..!.')
+# => 'bar'
 ```
 
 ## Related

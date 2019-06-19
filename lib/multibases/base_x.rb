@@ -6,6 +6,10 @@ module Multibases
   class BaseX
     using TrEscape
 
+    def inspect
+      "[Multibases::Base#{@table.base} alphabet=\"#{@table.chars.join}\"#{@table.strict? ? ' strict' : ''}]"
+    end
+
     class Table
       def self.from(alphabet)
         raise ArgumentError, 'Alphabet too long' if alphabet.length >= 255 # 256 - zero char
@@ -15,13 +19,23 @@ module Multibases
       end
 
       def initialize(chars, strict: false)
+        chars = chars.uniq
+
         @chars = chars
         @base = chars.length
         @forward = chars.each_with_index.to_h
         @backward = Hash[@forward.to_a.collect(&:reverse)]
         @factor = Math.log(256) / Math.log(base)
         @unit_size = @factor.ceil
-        @strict = strict || chars.uniq.length != chars.map(&:downcase).uniq.length
+
+        chars_downcased = chars.map(&:downcase).uniq
+        downcased = chars.map(&:upcase).uniq - chars_downcased
+
+        # Strict means that the algorithm may _not_ treat incorrectly cased
+        # input the same as correctly cased input. In other words, the table is
+        # strict if a character exists that is both upcased and downcased and
+        # therefore has a canonical casing.
+        @strict = strict || downcased.empty? || chars.length != chars_downcased.length
       end
 
       def index(byte)
@@ -49,15 +63,25 @@ module Multibases
       end
 
       def decoded_length(encoded_bytes)
-        (encoded_bytes.length / factor).ceil
+        (encoded_bytes.length / factor).round
       end
 
       def encoded_zeroes_length(count)
+        # For power of 2 bases, add "canonical-width"
+        return (factor * count).floor if pad_to_power?
+        # For other bases, add a equivalent count to front
         count
       end
 
       def decoded_zeroes_length(count)
-        (count / Math.log(@base).to_f).floor
+        # For power of 2 bases, add "canonical-width"
+        return (count / factor).round if pad_to_power?
+        # For other bases, add a equivalent count to front
+        count
+      end
+
+      def pad_to_power?
+        (Math.log2(base) % 1).zero?
       end
 
       def strict?
@@ -72,81 +96,76 @@ module Multibases
     end
 
     def encode(plain)
-      return @table.zero if plain.empty?
-
+      return '' if plain.empty?
       plain = plain.bytes unless plain.is_a?(Array)
+      expected_length = @table.encoded_length(plain)
 
-      # zeroes_count = [0, plain.find_index { |b| b != 0 } || plain.length].max
-      # plain = plain.drop(zeroes_count)
-      # zeroes_count = @table.encoded_zeroes_length(zeroes_count)
+      # Find leading zeroes
+      zeroes_count = [0, plain.find_index { |b| b != 0 } || plain.length].max
+      plain = plain.drop(zeroes_count)
+      expected_length = @table.encoded_length(plain) unless @table.pad_to_power?
 
-      size = @table.encoded_length(plain) # + zeroes_count
-      result = Array.new(size, -1)
-      last_position = 0
+      # Encode number into destination base as byte array
+      output = []
+      plain_big_number = plain.inject { |a, b| (a << 8) + b }
 
-      # Transfer bytes in correct base to result
-      plain.each do |byte|
-        processed = 0
-        result_index = size - 1
-
-        # result[i] = result[i] * 256 + next character value
-        while processed < last_position && result_index != -1 do
-          byte += (256 * [0, result[result_index]].max)
-          result[result_index] = (byte % @table.base)
-          byte = (byte / @table.base)
-
-          result_index -= 1
-          processed += 1
-
-          break if byte == 0 && processed > last_position
-        end
-
-        last_position = processed
+      while plain_big_number >= @table.base do
+        mod = plain_big_number % @table.base
+        output.unshift(@table.chr(mod))
+        plain_big_number = (plain_big_number - mod) / @table.base
       end
 
-      zeroes_count = 0
-      output = (@table.zero * zeroes_count) + result.drop_while(&:negative?).map { |i| @table.chr(i) }.join
-      output.encode('ASCII-8BIT')
+      output.unshift(@table.chr(plain_big_number))
+
+      # Prepend the leading zeroes
+      @table.encoded_zeroes_length(zeroes_count).times do
+        output.unshift(@table.zero)
+      end
+
+      # Padding at the front (to match expected length). Because of the
+      if @table.pad_to_power?
+        (expected_length - output.length).times do
+          output.unshift(@table.zero)
+        end
+      end
+
+      # Encode correctly
+      output.join.encode('ASCII-8BIT')
     end
 
     def decode(encoded)
       raise ArgumentError, "'#{encoded}' contains unknown characters'" unless decodable?(encoded)
       return '' if encoded.empty?
+      encoded = encoded.force_encoding('ASCII-8BIT').chars unless encoded.is_a?(Array)
+      # expected_length = @table.decoded_length(encoded)
 
-      encoded = encoded.bytes unless encoded.is_a?(Array)
-      # zeroes_count = [0, encoded.find_index { |b| b.chr != @table.zero } || encoded.length].max
-      # p "index: #{zeroes_count}"
-      # encoded = encoded.drop(zeroes_count)
-      # zeroes_count = @table.decoded_zeroes_length(zeroes_count)
+      # Find leading zeroes
+      zeroes_count = [0, encoded.find_index { |b| b != @table.zero } || encoded.length].max
+      encoded = encoded.drop(zeroes_count)
+      # expected_length = @table.decoded_length(plain) unless @table.pad_to_power?
 
-      # p "count: #{zeroes_count}"
+      # Decode number from encoding base to base 10
+      encoded_big_number = 0
 
-      size = @table.decoded_length(encoded) # + zeroes_count
-      result = Array.new(size, -1)
-      last_position = 0
-
-      encoded.each do |encoded_byte|
-        value = @table.index(encoded_byte)
-
-        break if value == 255
-
-        processed = 0
-        result_index = size - 1
-
-        while ((value != 0 || processed < last_position) && result_index != -1) do
-          value += (@table.base * [0, result[result_index]].max) >> 0
-          result[result_index] = (value % 256) >> 0
-          value = (value / 256) >> 0
-
-          result_index -= 1
-          processed += 1
-        end
-
-        last_position = processed
+      encoded.reverse.each_with_index do |char, i|
+        table_i = @table.index(char)
+        encoded_big_number += @table.base ** i * table_i
       end
 
-      zeroes_count = 0
-      ("\x00" * zeroes_count) + result.drop_while(&:negative?).map(&:chr).join.tap do |x| puts x end
+      # Build the output by reversing the bytes. Because the encoding is "lost"
+      # the result might not be correct just yet. This is up to the caller to
+      # fix. The algorithm **can not know** what the encoding was.
+      output = 1.upto((Math.log2(encoded_big_number)/8).ceil).collect do
+        encoded_big_number, character_byte = encoded_big_number.divmod 256
+        character_byte.chr # treat each byte as a character <-- encoding unknown
+      end.reverse
+
+      # Prepend the leading zeroes
+      @table.decoded_zeroes_length(zeroes_count).times do
+        output.unshift("\x00")
+      end
+
+      output.join('')
     end
 
     def decodable?(encoded)

@@ -10,6 +10,13 @@ Gem::Specification.new do |spec|
   spec.email         = ['derk-jan+github@karrenbeld.info']
 
   spec.summary       = 'Ruby implementation of the multibase specification'
+  spec.description   = %q(
+    This is a low-level library, but high level implementations are provided.
+    You can also bring your own encoder/decoder. This gem can be used _both_ for
+    encoding into or decoding from multibase packed strings, as well as serve as
+    a _general purpose_ library to do `BaseX` encoding and decoding _without_
+    adding the prefix.
+  ).strip
   spec.homepage      = 'https://github.com/SleeplessByte/ruby-multibase'
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'

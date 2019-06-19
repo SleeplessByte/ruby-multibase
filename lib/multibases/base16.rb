@@ -6,16 +6,20 @@ module Multibases
   class Base16
     using TrEscape
 
+    def inspect
+      "[Multibases::Base16 alphabet=\"#{@table.chars.join}\"#{@table.strict? ? ' strict' : ''}]"
+    end
+
     # RFC 4648 implementation
     def self.encode(plain)
-      plain = plain.encode('UTF-8').map(&:chr) if plain.is_a?(Array)
+      plain = plain.map(&:chr) if plain.is_a?(Array)
       # plain.each_byte.map do |byte| byte.to_s(16) end.join
       plain.unpack1('H*').encode('ASCII-8BIT')
     end
 
     def self.decode(packed)
       # packed.scan(/../).map { |x| x.hex.chr }.join
-      Array(packed).pack('H*').encode('UTF-8')
+      Array(packed).pack('H*')
     end
 
     class Table
@@ -25,6 +29,8 @@ module Multibases
       end
 
       def initialize(chars, strict: false)
+        chars = chars.uniq
+
         if chars.length < 16 || chars.length > 17
           # Allow 17 for stale padding that does nothing
           raise ArgumentError,
@@ -32,7 +38,14 @@ module Multibases
                 "#{chars.length} characters."
         end
 
-        @strict = strict || chars.uniq.length != chars.map(&:downcase).uniq.length
+        chars_downcased = chars.map(&:downcase).uniq
+        downcased = chars.map(&:upcase).uniq - chars_downcased
+
+        # Strict means that the algorithm may _not_ treat incorrectly cased
+        # input the same as correctly cased input. In other words, the table is
+        # strict if a character exists that is both upcased and downcased and
+        # therefore has a canonical casing.
+        @strict = strict || downcased.empty? || chars.length != chars_downcased.length
         @chars = chars
       end
 

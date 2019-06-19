@@ -242,12 +242,12 @@ class MultibasesFixturesTest < Minitest::Test
       packed_text.upcase :
       packed_text.downcase
 
-    define_method("test_#{encoding}_decode_non_canonical_hello_world") do
-      assert_equal plain_text, Multibases.decode(packed_text)
-    end
-
     define_method("test_#{encoding}_encode_hello_world_canonically") do
       assert_equal expected_packed_text, Multibases.pack(encoding, plain_text)
+    end
+
+    define_method("test_#{encoding}_decode_non_canonical_hello_world") do
+      assert_equal plain_text, Multibases.decode(packed_text)
     end
   end
 

@@ -6,6 +6,10 @@ module Multibases
   class Base64
     using TrEscape
 
+    def inspect
+      "[Multibases::Base64 alphabet=\"#{@table.chars.join}\"]"
+    end
+
     # RFC 4648 implementation
     def self.encode(plain)
       # Base64.strict_encode(plain)

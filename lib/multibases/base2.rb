@@ -6,6 +6,10 @@ module Multibases
   class Base2
     using TrEscape
 
+    def inspect
+      "[Multibases::Base2 alphabet=\"#{@table.chars.join}\"]"
+    end
+
     def self.encode(plain)
       plain = plain.map(&:chr) if plain.is_a?(Array)
       plain.unpack1('B*').encode('ASCII-8BIT')
@@ -22,6 +26,8 @@ module Multibases
       end
 
       def initialize(chars)
+        chars = chars.uniq
+
         if chars.length < 2 || chars.length > 2
           # Allow 17 for stale padding that does nothing
           raise ArgumentError,

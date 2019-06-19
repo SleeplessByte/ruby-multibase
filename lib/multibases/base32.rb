@@ -11,6 +11,10 @@ module Chunkify
 end
 
 module Multibases
+  def inspect
+    "[Multibases::Base32 alphabet=\"#{@table.chars.join}\"#{@table.strict? ? ' strict' : ''}]"
+  end
+
   # RFC 3548
   class Base32
     using Chunkify
@@ -32,16 +36,26 @@ module Multibases
       attr_reader :chars
 
       def initialize(chars, strict: false)
+        chars = chars.uniq
+
         if chars.length < 32 || chars.length > 33
           raise ArgumentError,
                 'Expected chars to contain 32 characters or 32 + 1 padding ' +
                 "character. Actual: #{chars.length} characters"
         end
 
-        @strict = strict || chars.uniq.length != chars.map(&:downcase).uniq.length
         @chars = chars
         @forward = chars.each_with_index.to_h
         @backward = Hash[@forward.to_a.collect(&:reverse)]
+
+        input_downcased = chars.map(&:downcase).uniq
+        downcased = chars.map(&:upcase).uniq - input_downcased
+
+        # Strict means that the algorithm may _not_ treat incorrectly cased
+        # input the same as correctly cased input. In other words, the table is
+        # strict if a character exists that is both upcased and downcased and
+        # therefore has a canonical casing.
+        @strict = strict || downcased.empty? || chars.length != input_downcased.length
       end
 
       def index(byte)

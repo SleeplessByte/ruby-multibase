@@ -283,6 +283,7 @@ expected == Multibases::Base16.encode(Multibases::ByteArray.new("abc".bytes))
 ## Related
 
 - [`multiformats/multibase`][git-multibase]: the spec repository
+- [`multiformats/ruby-multicodec`][git-ruby-multicodec]: the ruby implementation of [`multiformats/multicodec`][git-multicodec]
 - [`multiformats/ruby-multihash`][git-ruby-multihash]: the ruby implementation of [`multiformats/multihash`][git-multihash]
 
 ## Development
@@ -298,7 +299,7 @@ push git commits and tags, and push the `.gem` file to [rubygems.org][web-rubyge
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at [SleeplessByte/commmand][git-self].
+Bug reports and pull requests are welcome on GitHub at [SleeplessByte/ruby-multibase][git-self].
 This project is intended to be a safe, welcoming space for collaboration, and
 contributors are expected to adhere to the [Contributor Covenant][web-coc] code
 of conduct.
@@ -316,6 +317,8 @@ issue trackers, chat rooms and mailing lists is expected to follow the
 [spec]: https://github.com/multiformats/multibase
 [git-self-coc]: https://github.com/SleeplessByte/ruby-multibase/blob/master/CODE_OF_CONDUCT.md
 [git-self]: https://github.com/SleeplessByte/ruby-multibase
+[git-ruby-multicodec]: https://github.com/SleeplessByte/ruby-multicodec
+[git-multicodec]:  https://github.com/multiformats/multicodec
 [git-multibase]:  https://github.com/multiformats/multibase
 [git-multibase-table]: https://github.com/multiformats/multibase/blob/master/multibase.csv
 [git-ruby-multihash]: https://github.com/multiformats/ruby-multihash

@@ -11,8 +11,6 @@ require 'multibases/base32'
 require 'multibases/base64'
 
 module Multibases
-  class Error < StandardError; end
-
   # https://github.com/multiformats/multibase#multibase-table-v100-rc-semver
   multibase_version '1.0.0'
 

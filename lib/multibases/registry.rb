@@ -23,6 +23,10 @@ module Multibases
 
   module_function
 
+  def [](entry)
+    find_by(code: entry, encoding: entry)
+  end
+
   def implement(encoding, code, implementation = nil, alphabet = nil)
     Multibases::IMPLEMENTATIONS[encoding] = Registration.new(
       code,
@@ -43,6 +47,14 @@ module Multibases
     Multibases::IMPLEMENTATIONS.values.find do |v|
       v == code || v == encoding
     end
+  end
+
+  def codes
+    Multicodecs::REGISTRATIONS.values.map(&:code)
+  end
+
+  def names
+    Multicodecs::REGISTRATIONS.keys
   end
 
   def multibase_version(multibase_semver = nil)

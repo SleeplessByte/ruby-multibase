@@ -1,9 +1,14 @@
 # Multibases
 
-[![Build Status](https://travis-ci.com/SleeplessByte/ruby-multibase.svg?branch=master)](https://travis-ci.com/SleeplessByte/ruby-multibase)
-[![Gem Version](https://badge.fury.io/rb/multibases.svg)](https://badge.fury.io/rb/multibases)
-[![MIT license](https://img.shields.io/badge/license-MIT-brightgreen.svg)](http://opensource.org/licenses/MIT)
-[![Maintainability](https://api.codeclimate.com/v1/badges/1253cc22b664d27d4052/maintainability)](https://codeclimate.com/github/SleeplessByte/ruby-multibase/maintainability)
+[![Build Status](https://travis-ci.com/SleeplessByte/ruby-multibase.svg?branch=master)][shield-link-travis]
+[![Gem Version](https://badge.fury.io/rb/multibases.svg)][shield-link-gem]
+[![MIT license](https://img.shields.io/badge/license-MIT-brightgreen.svg)][shield-link-license]
+[![Maintainability](https://api.codeclimate.com/v1/badges/1253cc22b664d27d4052/maintainability)][shield-link-codeclimate]
+
+[shield-link-travis]: https://travis-ci.com/SleeplessByte/ruby-multibase
+[shield-link-gem]: https://badge.fury.io/rb/multibases
+[shield-link-license]: http://opensource.org/licenses/MIT
+[shield-link-codeclimate]: https://codeclimate.com/github/SleeplessByte/ruby-multibase/maintainability
 
 > Multibase is a protocol for disambiguating the encoding of base-encoded
 > (e.g., base32, base64, base58, etc.) binary appearing in text.

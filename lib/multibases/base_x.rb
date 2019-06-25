@@ -16,7 +16,7 @@ module Multibases
       def self.from(alphabet, **opts)
         raise ArgumentError, 'Alphabet too long' if alphabet.length >= 255
 
-        alphabet = alphabet.bytes if alphabet.respond_to?(:bytes)
+        alphabet = alphabet.codepoints if alphabet.respond_to?(:codepoints)
         alphabet.map!(&:ord)
 
         new(alphabet, **opts)
@@ -36,7 +36,7 @@ module Multibases
     def encode(plain)
       return EncodedByteArray::EMPTY if plain.empty?
 
-      plain = plain.bytes unless plain.is_a?(Array)
+      plain = plain.codepoints unless plain.is_a?(Array)
       expected_length = @table.encoded_length(plain)
 
       # Find leading zeroes
@@ -84,7 +84,7 @@ module Multibases
       return DecodedByteArray::EMPTY if encoded.empty?
 
       unless encoded.is_a?(Array)
-        encoded = encoded.force_encoding(@table.encoding).bytes
+        encoded = encoded.force_encoding(@table.encoding).codepoints
       end
 
       unless decodable?(encoded)
@@ -106,9 +106,10 @@ module Multibases
         encoded_big_number += @table.base**i * table_i
       end
 
-      # Build the output by reversing the bytes. Because the encoding is "lost"
-      # the result might not be correct just yet. This is up to the caller to
-      # fix. The algorithm **can not know** what the encoding was.
+      # Build the output by reversing the bytes (NOTE: **not** codepoints).
+      # Because the encoding is "lost" the result might not be correct just yet.
+      # This is up to the caller to fix. The algorithm **can not know** what
+      # the encoding was.
       output = 1.upto((Math.log2(encoded_big_number) / 8).ceil).collect do
         encoded_big_number, character_byte = encoded_big_number.divmod 256
         character_byte

@@ -33,11 +33,11 @@ module Multibases
     def initialize(*_, encoding: nil); end
 
     def encode(data)
-      EncodedByteArray.new(data.is_a?(Array) ? data : data.bytes)
+      EncodedByteArray.new(data.is_a?(Array) ? data : data.codepoints)
     end
 
     def decode(data)
-      DecodedByteArray.new(data.is_a?(Array) ? data : data.bytes)
+      DecodedByteArray.new(data.is_a?(Array) ? data : data.codepoints)
     end
   end
 
@@ -88,7 +88,7 @@ module Multibases
       code,
       Multibases.encoding(code),
       encoded_data.length,
-      EncodedByteArray.new(encoded_data.bytes)
+      EncodedByteArray.new(encoded_data.codepoints)
     )
   end
 
@@ -96,7 +96,7 @@ module Multibases
     return encoded.pack if encoded.is_a?(Encoded)
     raise ArgumentError, 'Missing encoding of encoded data' unless encoding
 
-    encoded = encoded.bytes unless encoded.is_a?(Array)
+    encoded = encoded.codepoints unless encoded.is_a?(Array)
 
     Encoded.new(
       Multibases.code(encoding),

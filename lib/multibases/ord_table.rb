@@ -110,12 +110,12 @@ module Multibases
       @backward[index]
     end
 
-    def encoded_length(plain_bytes)
-      (plain_bytes.length.to_f * factor).ceil
+    def encoded_length(plain_codepoints)
+      (plain_codepoints.length.to_f * factor).ceil
     end
 
-    def decoded_length(encoded_bytes)
-      (encoded_bytes.length / factor).round
+    def decoded_length(encoded_codepoints)
+      (encoded_codepoints.length / factor).round
     end
 
     def encoded_zeroes_length(count)

@@ -23,7 +23,7 @@ module Multibases
 
     class Table < IndexedOrdTable
       def self.from(alphabet, **opts)
-        alphabet = alphabet.bytes if alphabet.respond_to?(:bytes)
+        alphabet = alphabet.codepoints if alphabet.respond_to?(:codepoints)
         alphabet.map!(&:ord)
 
         new(alphabet, **opts)
@@ -46,18 +46,18 @@ module Multibases
     end
 
     class Chunk
-      def initialize(bytes, table)
-        @bytes = bytes
+      def initialize(codepoints, table)
+        @codepoints = codepoints
         @table = table
       end
 
       def decode
-        bytes = @bytes.take_while { |c| c != @table.padder }
+        codepoints = @codepoints.take_while { |c| c != @table.padder }
 
-        n = (bytes.length * 5.0 / 8.0).floor
-        p = bytes.length < 8 ? 5 - (n * 8) % 5 : 0
+        n = (codepoints.length * 5.0 / 8.0).floor
+        p = codepoints.length < 8 ? 5 - (n * 8) % 5 : 0
 
-        c = bytes.inject(0) do |m, o|
+        c = codepoints.inject(0) do |m, o|
           i = @table.index(o)
           raise ArgumentError, "Invalid character '#{[o].pack('C*')}'" if i.nil?
 
@@ -68,9 +68,9 @@ module Multibases
       end
 
       def encode
-        n = (@bytes.length * 8.0 / 5.0).ceil
-        p = n < 8 ? 5 - (@bytes.length * 8) % 5 : 0
-        c = @bytes.inject(0) { |m, o| (m << 8) + o } << p
+        n = (@codepoints.length * 8.0 / 5.0).ceil
+        p = n < 8 ? 5 - (@codepoints.length * 8) % 5 : 0
+        c = @codepoints.inject(0) { |m, o| (m << 8) + o } << p
 
         output = (0..(n - 1)).to_a.reverse.collect do |i|
           @table.ord_at((c >> i * 5) & 0x1f)
@@ -101,7 +101,7 @@ module Multibases
     private
 
     def chunks(whole, size)
-      whole = whole.bytes unless whole.is_a?(Array)
+      whole = whole.codepoints unless whole.is_a?(Array)
 
       whole.each_slice(size).map do |slice|
         ::Multibases::Base32::Chunk.new(slice, @table)

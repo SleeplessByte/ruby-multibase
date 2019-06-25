@@ -18,7 +18,7 @@ module Multibases
 
       # plain.each_byte.map do |byte| byte.to_s(16) end.join
       EncodedByteArray.new(
-        plain.unpack1('H*').bytes,
+        plain.unpack1('H*').codepoints,
         encoding: Encoding::US_ASCII
       )
     end
@@ -27,12 +27,12 @@ module Multibases
       packed = packed.pack('C*') if packed.is_a?(Array)
 
       # packed.scan(/../).map { |x| x.hex.chr }.join
-      DecodedByteArray.new(Array(String(packed)).pack('H*').bytes)
+      DecodedByteArray.new(Array(String(packed)).pack('H*').codepoints)
     end
 
     class Table < OrdTable
       def self.from(alphabet, **opts)
-        alphabet = alphabet.bytes if alphabet.respond_to?(:bytes)
+        alphabet = alphabet.codepoints if alphabet.respond_to?(:codepoints)
         alphabet.map!(&:ord)
 
         new(alphabet, **opts)
@@ -70,7 +70,7 @@ module Multibases
       return DecodedByteArray::EMPTY if encoded.empty?
 
       unless encoded.is_a?(Array)
-        encoded = encoded.force_encoding(@table.encoding).bytes
+        encoded = encoded.force_encoding(@table.encoding).codepoints
       end
 
       unless decodable?(encoded)

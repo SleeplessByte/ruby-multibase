@@ -19,7 +19,7 @@ module Multibases
 
       # Base64.strict_encode(plain)
       EncodedByteArray.new(
-        Array(String(plain)).pack('m0').bytes,
+        Array(String(plain)).pack('m0').codepoints,
         encoding: Encoding::US_ASCII
       )
     end
@@ -28,12 +28,12 @@ module Multibases
       packed = packed.pack('C*') if packed.is_a?(Array)
       # Base64.strict_decode64("m").first
       # Don't use m0, as that requires padderding _always_
-      DecodedByteArray.new(packed.unpack1('m').bytes)
+      DecodedByteArray.new(packed.unpack1('m').codepoints)
     end
 
     class Table < OrdTable
       def self.from(alphabet, **opts)
-        alphabet = alphabet.bytes if alphabet.respond_to?(:bytes)
+        alphabet = alphabet.codepoints if alphabet.respond_to?(:codepoints)
         alphabet.map!(&:ord)
 
         new(alphabet, **opts)
@@ -77,7 +77,7 @@ module Multibases
       return DecodedByteArray::EMPTY if encoded.empty?
 
       unless encoded.is_a?(Array)
-        encoded = encoded.force_encoding(@table.encoding).bytes
+        encoded = encoded.force_encoding(@table.encoding).codepoints
       end
 
       unless decodable?(encoded)

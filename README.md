@@ -130,13 +130,24 @@ data.encoding
 data.bytes
 # => [104, 0, 101, 0, 108, 0, 108, 0, 111, 0]
 
+data.codepoints
+# => [104, 101, 108, 108, 111]
+
 packed = Multibases.pack('base16', data)
 # => [Multibases::EncodedByteArray "f680065006c006c006f00"]
 
 decoded = Multibases.decode(packed)
 # => [Multibases::DecodedByteArray "h e l l o "]
 
-decoded.to_s('UTF-16LE')
+decoded.to_s
+# => Multibases::MissingEncoding (Can not convert from ByteArray to string
+#    without encoding. Pass the resulting string encoding as the first argument
+#    of to_s.)
+#    This does not default to UTF-8 or US-ASCII because that would hide issues
+#    until you have output that is NOT encoding as UTF-8 or US-ASCII and does
+#    not fit in those ranges.
+
+decoded.to_s(Encoding::UTF_16LE)
 # => "hello"
 ```
 
@@ -194,17 +205,18 @@ additional memory by only loading `multibases/bare`.
 #       is, stored in the output. However, the system is _so_ flexible that this
 #       works perfectly for any reversible transformation!
 class EngineKlazz
-  def initialize(*_)
+  def initialize(*_, encoding: nil)
+    @encoding = encoding
   end
 
   def encode(plain)
-    plain = plain.bytes unless plain.is_a?(Array)
-    Multibases::EncodedByteArray.new(plain.reverse)
+    plain = plain.codepoints unless plain.is_a?(Array)
+    Multibases::EncodedByteArray.new(plain.reverse, encoding: @encoding)
   end
 
   def decode(encoded)
-    encoded = encoded.bytes unless encoded.is_a?(Array)
-    Multibases::DecodedByteArray.new(encoded.reverse)
+    encoded = encoded.codepoints unless encoded.is_a?(Array)
+    Multibases::DecodedByteArray.new(encoded.reverse, encoding: @encoding)
   end
 end
 
@@ -214,7 +226,7 @@ Multibases.implement 'reverse', 'r', EngineKlazz, 'alphabet'
 Multibases.pack('reverse', 'md')
 # => [Multibases::EncodedByteArray "rdm"]
 
-Multibases.decode('dm')
+Multibases.decode('rdm')
 # => [Multibases::DecodedByteArray "md"]
 
 # Alternatively, you can pass the instantiated engine to the appropriate
@@ -287,7 +299,7 @@ expected = Multibases::Base16.encode("abc")
 expected == Multibases::Base16.encode([97, 98, 99])
 # => true
 
-expected == Multibases::Base16.encode(Multibases::ByteArray.new("abc".bytes))
+expected == Multibases::Base16.encode(Multibases::ByteArray.new("abc".codepoints))
 # => true
 ```
 

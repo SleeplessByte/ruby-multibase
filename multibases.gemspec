@@ -9,6 +9,7 @@ Gem::Specification.new do |spec|
   spec.version       = Multibases::VERSION
   spec.authors       = ['Derk-Jan Karrenbeld']
   spec.email         = ['derk-jan+github@karrenbeld.info']
+  spec.license       = 'MIT'
 
   spec.summary       = 'Ruby implementation of the multibase specification'
   spec.description   = %q(

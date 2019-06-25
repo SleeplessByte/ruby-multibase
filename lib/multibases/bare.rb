@@ -92,8 +92,9 @@ module Multibases
     )
   end
 
-  def decorate(encoding, encoded = nil)
-    return encoding.pack if encoding.is_a?(Encoded)
+  def decorate(encoded, encoding = nil)
+    return encoded.pack if encoded.is_a?(Encoded)
+    raise ArgumentError, 'Missing encoding of encoded data' unless encoding
 
     encoded = encoded.bytes unless encoded.is_a?(Array)
 

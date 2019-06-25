@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+- Add tests for wrappers
+
 ## 0.3.0
 
 - Fix convenience methods `names` and `codes`.

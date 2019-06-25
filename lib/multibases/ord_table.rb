@@ -1,28 +1,18 @@
 # frozen_string_literal: true
 
+require 'multibases/error'
+
 module Multibases
   class OrdTable
-    def initialize(ords, strict:, padder: nil)
+    def initialize(ords, strict:, padder: nil, encoding: nil)
       ords = ords.uniq
 
       @ords = ords
       @base = ords.length
       @padder = padder
 
-      chars = ords.map(&:chr)
-      chars_downcased = chars.map(&:downcase).uniq
-      chars_upcased = chars.map(&:upcase).uniq
-      chars_cased = chars_upcased - chars_downcased
-
-      # Strict means that the algorithm may _not_ treat incorrectly cased
-      # input the same as correctly cased input. In other words, the table is
-      # strict if a character exists that is both upcased and downcased and
-      # therefore has a canonical casing.
-      @strict = strict ||
-                chars_cased.empty? ||
-                chars.length != chars_downcased.length
-
-      @loose_ords = (chars + chars_downcased + chars_upcased).uniq.map(&:ord)
+      calculate_strictness(strict: strict)
+      calculate_encoding(encoding: encoding)
     end
 
     def eql?(other)
@@ -48,10 +38,52 @@ module Multibases
     end
 
     def alphabet
-      @ords.map(&:chr).join
+      @ords.pack('C*')
     end
 
-    attr_reader :base, :factor, :padder
+    attr_reader :base, :factor, :padder, :encoding
+
+    private
+
+    def calculate_strictness(strict:)
+      chars = alphabet.chars
+      chars_downcased = chars.map(&:downcase).uniq
+      chars_upcased = chars.map(&:upcase).uniq
+      chars_cased = chars_upcased - chars_downcased
+
+      # Strict means that the algorithm may _not_ treat incorrectly cased
+      # input the same as correctly cased input. In other words, the table is
+      # strict if a character exists that is both upcased and downcased and
+      # therefore has a canonical casing.
+      @strict = strict ||
+                chars_cased.empty? ||
+                chars.length != chars_downcased.length
+
+      @loose_ords = (chars + chars_downcased + chars_upcased).uniq.map(&:ord)
+    end
+
+    def calculate_encoding(encoding:)
+      invalid_ord = @ords.find { |ord| ord > 255 }
+      raise AlphabetOutOfBoundary, invalid_ord if invalid_ord
+
+      if encoding
+        raise AlphabetEncodingInvalid, encoding unless valid_encoding?(encoding)
+
+        @encoding = encoding
+        return
+      end
+
+      @encoding = fits_seven_bits? ? Encoding::US_ASCII : Encoding::ASCII_8BIT
+    end
+
+    def valid_encoding?(encoding)
+      ords = strict? ? @ords : @loose_ords
+      ords.pack('C*').force_encoding(encoding).valid_encoding?
+    end
+
+    def fits_seven_bits?
+      valid_encoding?(Encoding::US_ASCII)
+    end
   end
 
   class IndexedOrdTable < OrdTable

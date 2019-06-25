@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative './byte_array'
-require_relative './ord_table'
+require 'multibases/byte_array'
+require 'multibases/ord_table'
 
 module Multibases
   class Base16
@@ -14,14 +14,17 @@ module Multibases
 
     # RFC 4648 implementation
     def self.encode(plain)
-      plain = plain.map(&:chr).join if plain.is_a?(Array)
+      plain = plain.pack('C*') if plain.is_a?(Array)
 
       # plain.each_byte.map do |byte| byte.to_s(16) end.join
-      EncodedByteArray.new(plain.unpack1('H*').bytes)
+      EncodedByteArray.new(
+        plain.unpack1('H*').bytes,
+        encoding: Encoding::US_ASCII
+      )
     end
 
     def self.decode(packed)
-      packed = packed.map(&:chr).join if packed.is_a?(Array)
+      packed = packed.pack('C*') if packed.is_a?(Array)
 
       # packed.scan(/../).map { |x| x.hex.chr }.join
       DecodedByteArray.new(Array(String(packed)).pack('H*').bytes)
@@ -48,8 +51,8 @@ module Multibases
       end
     end
 
-    def initialize(alphabet, strict: false)
-      @table = Table.from(alphabet, strict: strict)
+    def initialize(alphabet, strict: false, encoding: nil)
+      @table = Table.from(alphabet, strict: strict, encoding: encoding)
     end
 
     def encode(plain)
@@ -58,7 +61,8 @@ module Multibases
 
       encoded.transcode(
         Default.table_ords(force_strict: @table.strict?),
-        table_ords
+        table_ords,
+        encoding: @table.encoding
       )
     end
 
@@ -66,7 +70,7 @@ module Multibases
       return DecodedByteArray::EMPTY if encoded.empty?
 
       unless encoded.is_a?(Array)
-        encoded = encoded.force_encoding(Encoding::ASCII_8BIT).bytes
+        encoded = encoded.force_encoding(@table.encoding).bytes
       end
 
       unless decodable?(encoded)
@@ -76,7 +80,8 @@ module Multibases
       unless default?
         encoded = ByteArray.new(encoded).transcode(
           table_ords,
-          Default.table_ords(force_strict: @table.strict?)
+          Default.table_ords(force_strict: @table.strict?),
+          encoding: Encoding::US_ASCII
         )
       end
 

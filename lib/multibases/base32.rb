@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative './byte_array'
-require_relative './ord_table'
+require 'multibases/byte_array'
+require 'multibases/ord_table'
 
 module Multibases
   # RFC 3548
@@ -59,7 +59,7 @@ module Multibases
 
         c = bytes.inject(0) do |m, o|
           i = @table.index(o)
-          raise ArgumentError, "Invalid character '#{o.chr}'" if i.nil?
+          raise ArgumentError, "Invalid character '#{[o].pack('C*')}'" if i.nil?
 
           (m << 5) + i
         end >> p
@@ -79,14 +79,17 @@ module Multibases
       end
     end
 
-    def initialize(alphabet, strict: false)
-      @table = Table.from(alphabet, strict: strict)
+    def initialize(alphabet, strict: false, encoding: nil)
+      @table = Table.from(alphabet, strict: strict, encoding: encoding)
     end
 
     def encode(plain)
       return EncodedByteArray::EMPTY if plain.empty?
 
-      EncodedByteArray.new(chunks(plain, 5).collect(&:encode).flatten)
+      EncodedByteArray.new(
+        chunks(plain, 5).collect(&:encode).flatten,
+        encoding: @table.encoding
+      )
     end
 
     def decode(encoded)

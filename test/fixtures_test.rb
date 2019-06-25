@@ -90,11 +90,13 @@ class MultibasesFixturesTest < Minitest::Test
       encoding = row['encoding'] || row[0]
 
       define_method("test_#{encoding}_encode_on_#{name}") do
-        assert_equal packed_text, Multibases.pack(encoding, plain_text).to_s
+        packed_result = Multibases.pack(encoding, plain_text).to_s
+        assert_equal packed_text, packed_result
       end
 
       define_method("test_#{encoding}_decode_on_#{name}") do
-        assert_equal plain_text, Multibases.decode(packed_text).to_s
+        plain_result = Multibases.decode(packed_text).to_s(plain_text.encoding)
+        assert_equal plain_text, plain_result
       end
     end
   end
@@ -110,13 +112,13 @@ class MultibasesFixturesTest < Minitest::Test
                            end
 
     define_method("test_#{encoding}_encode_hello_world_canonically") do
-      assert_equal expected_packed_text,
-                   Multibases.pack(encoding, plain_text).to_s
+      packed_result = Multibases.pack(encoding, plain_text).to_s
+      assert_equal expected_packed_text, packed_result
     end
 
     define_method("test_#{encoding}_decode_non_canonical_hello_world") do
-      assert_equal plain_text,
-                   Multibases.decode(packed_text).to_s
+      plain_result = Multibases.decode(packed_text).to_s(plain_text.encoding)
+      assert_equal plain_text, plain_result
     end
   end
 
@@ -124,15 +126,17 @@ class MultibasesFixturesTest < Minitest::Test
     encoding = row[0]
     plain_text = row[1].encode(Encoding::UTF_8)
     packed_text = row[2]
+    is_valid = plain_text.valid_encoding?
 
     define_method("test_#{encoding}_encode_on_emojies_#{i}") do
-      assert_equal packed_text,
-                   Multibases.pack(encoding, plain_text).to_s
+      packed_result = Multibases.pack(encoding, plain_text).to_s
+      assert_equal packed_text, packed_result
     end
 
     define_method("test_#{encoding}_decode_on_emojies_#{i}") do
-      assert_equal plain_text,
-                   Multibases.decode(packed_text).to_s(Encoding::UTF_8)
+      plain_result = Multibases.decode(packed_text).to_s(plain_text.encoding)
+      assert_equal plain_text, plain_result
+      assert_equal is_valid, plain_result.valid_encoding?
     end
   end
 
@@ -142,11 +146,13 @@ class MultibasesFixturesTest < Minitest::Test
     packed_text = row[2]
 
     define_method("test_#{encoding}_encode_on_#{plain_text}") do
-      assert_equal packed_text, Multibases.pack(encoding, plain_text).to_s
+      packed_result = Multibases.pack(encoding, plain_text).to_s
+      assert_equal packed_text, packed_result
     end
 
     define_method("test_#{encoding}_decode_on_#{plain_text}") do
-      assert_equal plain_text, Multibases.decode(packed_text).to_s
+      plain_result = Multibases.decode(packed_text).to_s(plain_text.encoding)
+      assert_equal plain_text, plain_result
     end
   end
 end

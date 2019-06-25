@@ -27,11 +27,11 @@ module Multibases
     find_by(code: entry, encoding: entry)
   end
 
-  def implement(encoding, code, implementation = nil, alphabet = nil)
+  def implement(encoding, code, implementation = nil, alphabet = nil, alphabet_encoding = nil)
     Multibases::IMPLEMENTATIONS[encoding] = Registration.new(
       code,
       encoding,
-      implementation&.new(alphabet)
+      implementation&.new(alphabet, encoding: alphabet_encoding)
     )
   end
 
@@ -50,11 +50,11 @@ module Multibases
   end
 
   def codes
-    Multicodecs::REGISTRATIONS.values.map(&:code)
+    Multibases::IMPLEMENTATIONS.values.map(&:code)
   end
 
   def names
-    Multicodecs::REGISTRATIONS.keys
+    Multibases::IMPLEMENTATIONS.keys
   end
 
   def multibase_version(multibase_semver = nil)

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative './byte_array'
-require_relative './ord_table'
+require 'multibases/byte_array'
+require 'multibases/ord_table'
 
 module Multibases
   class Base2
@@ -10,12 +10,15 @@ module Multibases
     end
 
     def self.encode(plain)
-      plain = plain.map(&:chr).join if plain.is_a?(Array)
-      EncodedByteArray.new(plain.unpack1('B*').bytes)
+      plain = plain.pack('C*') if plain.is_a?(Array)
+      EncodedByteArray.new(
+        plain.unpack1('B*').bytes,
+        encoding: Encoding::US_ASCII
+      )
     end
 
     def self.decode(packed)
-      packed = packed.map(&:chr).join if packed.is_a?(Array)
+      packed = packed.pack('C*') if packed.is_a?(Array)
       # Pack only works on an array with a single bit string
       DecodedByteArray.new(Array(String(packed)).pack('B*').bytes)
     end
@@ -40,8 +43,8 @@ module Multibases
       end
     end
 
-    def initialize(alphabet, strict: false)
-      @table = Table.from(alphabet, strict: strict)
+    def initialize(alphabet, strict: false, encoding: nil)
+      @table = Table.from(alphabet, strict: strict, encoding: encoding)
     end
 
     def encode(plain)
@@ -50,7 +53,8 @@ module Multibases
 
       encoded.transcode(
         Default.table_ords(force_strict: @table.strict?),
-        table_ords
+        table_ords,
+        encoding: @table.encoding
       )
     end
 
@@ -58,7 +62,7 @@ module Multibases
       return DecodedByteArray::EMPTY if encoded.empty?
 
       unless encoded.is_a?(Array)
-        encoded = encoded.force_encoding(Encoding::ASCII_8BIT).bytes
+        encoded = encoded.force_encoding(@table.encoding).bytes
       end
 
       unless decodable?(encoded)
@@ -68,7 +72,8 @@ module Multibases
       unless default?
         encoded = ByteArray.new(encoded).transcode(
           table_ords,
-          Default.table_ords(force_strict: @table.strict?)
+          Default.table_ords(force_strict: @table.strict?),
+          encoding: Encoding::US_ASCII
         )
       end
 

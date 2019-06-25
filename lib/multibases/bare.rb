@@ -1,21 +1,11 @@
 # frozen_string_literal: true
 
 require 'multibases/version'
+require 'multibases/error'
 require 'multibases/registry'
+require 'multibases/byte_array'
 
 module Multibases
-  class Error < StandardError; end
-
-  class NoEngine < Error
-    def initialize(encoding)
-      super(
-        "There is no engine registered to encode or decode #{encoding}.\n" \
-          'Either pass it as an argument, or use Multibases.implement to ' \
-          'register it globally.'
-      )
-    end
-  end
-
   Encoded = Struct.new(:code, :encoding, :length, :data) do
     ##
     # Packs the data and the code into an encoded string
@@ -40,7 +30,7 @@ module Multibases
   end
 
   class Identity
-    def initialize(*_); end
+    def initialize(*_, encoding: nil); end
 
     def encode(data)
       EncodedByteArray.new(data.is_a?(Array) ? data : data.bytes)

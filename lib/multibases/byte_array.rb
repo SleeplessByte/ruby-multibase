@@ -1,7 +1,16 @@
 # frozen_string_literal: true
 
+require 'multibases/error'
+
 module Multibases
+
   class ByteArray < DelegateClass(Array)
+    def initialize(array, encoding: nil)
+      super array
+
+      @encoding = encoding
+    end
+
     def hash
       __getobj__.hash
     end
@@ -18,11 +27,11 @@ module Multibases
       super || __getobj__.is_a?(klazz)
     end
 
-    def transcode(from, to)
+    def transcode(from, to, encoding: nil)
       from = from.each_with_index.to_h
       to = Hash[to.each_with_index.to_a.collect(&:reverse)]
 
-      self.class.new(map { |byte| to[from[byte]] })
+      self.class.new(map { |byte| to[from[byte]] }, encoding: encoding)
     end
 
     alias to_a to_arr
@@ -31,11 +40,14 @@ module Multibases
 
   class EncodedByteArray < ByteArray
     def inspect
-      "[Multibases::EncodedByteArray \"#{to_str}\"]"
+      encoding = @encoding || Encoding::BINARY
+      "[Multibases::EncodedByteArray \"#{to_str(encoding)}\"]"
     end
 
-    def to_str
-      map(&:chr).join.encode(Encoding::ASCII_8BIT)
+    def to_str(encoding = @encoding)
+      raise MissingEncoding unless encoding
+
+      pack('C*').force_encoding(encoding)
     end
 
     def chomp!(ord)
@@ -54,11 +66,14 @@ module Multibases
 
   class DecodedByteArray < ByteArray
     def inspect
-      "[Multibases::DecodedByteArray \"#{to_str}\"]"
+      encoding = @encoding || Encoding::BINARY
+      "[Multibases::DecodedByteArray \"#{to_str(encoding)}\"]"
     end
 
-    def to_str(encoding = Encoding::UTF_8)
-      map(&:chr).join.force_encoding(encoding)
+    def to_str(encoding = @encoding)
+      raise MissingEncoding unless encoding
+
+      pack('C*').force_encoding(encoding)
     end
 
     def force_encoding(*args)

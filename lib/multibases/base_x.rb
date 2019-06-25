@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require_relative './byte_array'
-require_relative './ord_table'
+require 'multibases/byte_array'
+require 'multibases/ord_table'
 
 module Multibases
   class BaseX
@@ -23,8 +23,8 @@ module Multibases
       end
     end
 
-    def initialize(alphabet, strict: false)
-      @table = Table.from(alphabet, strict: strict)
+    def initialize(alphabet, strict: false, encoding: nil)
+      @table = Table.from(alphabet, strict: strict, encoding: encoding)
     end
 
     ##
@@ -71,7 +71,7 @@ module Multibases
         end
       end
 
-      EncodedByteArray.new(output)
+      EncodedByteArray.new(output, encoding: @table.encoding)
     end
 
     ##
@@ -84,7 +84,7 @@ module Multibases
       return DecodedByteArray::EMPTY if encoded.empty?
 
       unless encoded.is_a?(Array)
-        encoded = encoded.force_encoding(Encoding::ASCII_8BIT).bytes
+        encoded = encoded.force_encoding(@table.encoding).bytes
       end
 
       unless decodable?(encoded)

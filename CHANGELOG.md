@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2
+
+- Add tests for `ByteArray`
+- Add `to_utf8_str` and `to_ascii_str` convenience
+
 ## 0.3.1
 
 - Add tests for wrappers

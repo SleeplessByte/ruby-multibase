@@ -15,10 +15,6 @@ module Multibases
       __getobj__.hash
     end
 
-    def eql?(other)
-      other.to_s.eql?(to_s)
-    end
-
     def to_arr
       __getobj__.dup
     end
@@ -50,6 +46,14 @@ module Multibases
       pack('C*').force_encoding(encoding)
     end
 
+    def to_ascii_str
+      to_str(Encoding::US_ASCII)
+    end
+
+    def to_utf8_str
+      to_str(Encoding::UTF_8)
+    end
+
     def chomp!(ord)
       return self unless ord
 
@@ -76,8 +80,12 @@ module Multibases
       pack('C*').force_encoding(encoding)
     end
 
-    def force_encoding(*args)
-      to_str(*args)
+    def to_ascii_str
+      to_str(Encoding::US_ASCII)
+    end
+
+    def to_utf8_str
+      to_str(Encoding::UTF_8)
     end
 
     alias to_s to_str
